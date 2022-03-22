@@ -4,6 +4,7 @@
 #include "image.h"
 
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 
@@ -30,16 +31,16 @@ void ArgsHandler::Handle(int argc, char* argv[]) {
             }
             const filters::Crop crop(width, height);
             image = crop(image);
-        } else if (std::strcmp(argv[i], "-gs")) {
+        } else if (std::strcmp(argv[i], "-gs") == 0) {
             const filters::Grayscale grayscale;
             image = grayscale(image);
-        } else if (std::strcmp(argv[i], "-neg")) {
+        } else if (std::strcmp(argv[i], "-neg") == 0) {
             const filters::Negative negative;
             image = negative(image);
-        } else if (std::strcmp(argv[i], "-sharp")) {
+        } else if (std::strcmp(argv[i], "-sharp") == 0) {
             const filters::Sharpening sharp;
             image = sharp(image);
-        } else if (std::strcmp(argv[i], "-edge")) {
+        } else if (std::strcmp(argv[i], "-edge") == 0) {
             errno = 0;
             const float threshold = std::strtof(argv[++i], nullptr);
             if (errno) {
@@ -47,7 +48,7 @@ void ArgsHandler::Handle(int argc, char* argv[]) {
             }
             const filters::EdgeDetection edge(threshold);
             image = edge(image);
-        } else if (std::strcmp(argv[i], "-blur")) {
+        } else if (std::strcmp(argv[i], "-blur") == 0) {
             errno = 0;
             const float sigma = std::strtof(argv[++i], nullptr);
             if (errno) {
@@ -55,6 +56,19 @@ void ArgsHandler::Handle(int argc, char* argv[]) {
             }
             const filters::GaussBlur blur(sigma);
             image = blur(image);
+        } else {
+            throw std::runtime_error("Wrong filter operand");
         }
     }
+    image.SaveToFile(outputFile);
+}
+
+void ArgsHandler::WriteHelp() {
+    std::cout
+            << "Usage:\timage_processor INPUT_FILE OUTPUT_FILE [-FILTER1 PARAM1 ...] [-FILTER2 PARAM1 ...]"
+            << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "Apply several filters to bpm image" << std::endl;
+    std::cout << std::endl;
 }

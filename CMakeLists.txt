@@ -6,3 +6,5 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 add_subdirectory(bin)
 add_subdirectory(lib)
+ENABLE_TESTING()
+add_subdirectory(tests)
