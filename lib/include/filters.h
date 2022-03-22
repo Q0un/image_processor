@@ -84,12 +84,13 @@ private:
     float ApplyFormula(float x, size_t d) const;
 };
 
-class Glass : public Filter {
+class RandomBlur : public Filter {
 public:
     Image operator()(const Image& image) const final;
 
 private:
     static inline std::mt19937 rnd = std::mt19937(0);
+    static constexpr size_t RADIUS = 15;
 };
 
 } // namespace filters

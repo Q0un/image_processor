@@ -9,7 +9,7 @@ bool BMPFileHeader::Check() const {
 
 bool BMPInfoHeader::Check() const {
     return planes == 1 && bitCount == 24 &&
-           (compression == 0 || compression == 3) && height > 0 && width > 0;
+           (compression == 0 || compression == 3);
 }
 
 Pixel Pixel::operator+(const Pixel& other) const {

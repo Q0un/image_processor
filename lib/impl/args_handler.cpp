@@ -21,12 +21,12 @@ void ArgsHandler::Handle(int argc, char* argv[]) {
     Image image = Image::FromFile(inputFile);
     for (size_t i = 3; i < argc; ++i) {
         if (std::strcmp(argv[i], "-crop") == 0) {
-            const size_t width = std::strtoul(argv[++i], nullptr, 10);
-            if (width == 0) {
+            const int32_t width = std::strtol(argv[++i], nullptr, 10);
+            if (width <= 0) {
                 throw std::runtime_error("Crop get wrong width");
             }
-            const size_t height = std::strtoul(argv[++i], nullptr, 10);
-            if (height == 0) {
+            const int32_t height = std::strtol(argv[++i], nullptr, 10);
+            if (height <= 0) {
                 throw std::runtime_error("Crop get wrong height");
             }
             const filters::Crop crop(width, height);
@@ -56,6 +56,9 @@ void ArgsHandler::Handle(int argc, char* argv[]) {
             }
             const filters::GaussBlur blur(sigma);
             image = blur(image);
+        } else if (std::strcmp(argv[i], "-rand") == 0) {
+            const filters::RandomBlur blur;
+            image = blur(image);
         } else {
             throw std::runtime_error("Wrong filter operand");
         }
@@ -71,4 +74,12 @@ void ArgsHandler::WriteHelp() {
 
     std::cout << "Apply several filters to bpm image" << std::endl;
     std::cout << std::endl;
+
+    std::cout << "Filters:" << std::endl;
+    std::cout << "  -crop WIDTH HEIGHT    Crop image" << std::endl;
+    std::cout << "  -gs                   Apply grayscale" << std::endl;
+    std::cout << "  -neg                  Apply negative" << std::endl;
+    std::cout << "  -sharp                Apply sharpening" << std::endl;
+    std::cout << "  -edge THRESHOLD       Apply edge detection" << std::endl;
+    std::cout << "  -blur SIGMA           Apply gaussian blur" << std::endl;
 }

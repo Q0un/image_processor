@@ -146,16 +146,16 @@ float GaussBlur::ApplyFormula(float x, size_t d) const {
            std::sqrt(2 * std::numbers::pi * sigma_ * sigma_);
 }
 
-Image Glass::operator()(const Image& image) const {
+Image RandomBlur::operator()(const Image& image) const {
     Image result = image;
     for (size_t i = 0; i < image.Height(); ++i) {
         for (size_t j = 0; j < image.Width(); ++j) {
-            size_t leftX = i >= 10 ? i - 10 : 0;
-            size_t rightX =
-                    i + 10 < image.Height() ? i + 10 : image.Height() - 1;
-            size_t leftY = j >= 10 ? j - 10 : 0;
-            size_t rightY =
-                    j + 10 < image.Width() ? j + 10 : image.Width() - 1;
+            size_t leftX = i >= RADIUS ? i - RADIUS : 0;
+            size_t rightX = i + RADIUS < image.Height() ?
+                            i + RADIUS : image.Height() - 1;
+            size_t leftY = j >= RADIUS ? j - RADIUS : 0;
+            size_t rightY = j + RADIUS < image.Width() ?
+                            j + RADIUS : image.Width() - 1;
             size_t cx = leftX + rnd() % (rightX - leftX);
             size_t cy = leftY + rnd() % (rightY - leftY);
             result[i][j] = image[cx][cy];
