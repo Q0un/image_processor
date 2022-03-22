@@ -1,5 +1,7 @@
 #include "args_handler.h"
 
+#include "image.h"
+
 #include <cstring>
 #include <stdexcept>
 #include <string>

@@ -35,22 +35,36 @@ struct BMPInfoHeader {
 #pragma pack(pop)
 
 struct Pixel {
-    float b;
-    float g;
-    float r;
+    float b{0};
+    float g{0};
+    float r{0};
+
+    Pixel operator+(const Pixel& other) const;
+    Pixel& operator+=(const Pixel& other);
+    Pixel operator*(float x) const;
+    Pixel& operator*=(float x);
 };
 
 class Image {
 public:
     static Image FromFile(std::string_view fileName);
-    static void ReadFileHeader(Image& image, std::ifstream& input);
-    static void ReadInfoHeader(Image& image, std::ifstream& input);
-    static void ReadData(Image& image, std::ifstream& input);
 
     void SaveToFile(std::string_view fileName) const;
+
+    std::vector<Pixel>& operator[](size_t i);
+    const std::vector<Pixel>& operator[](size_t i) const;
+
+    int32_t Width() const;
+    int32_t Height() const;
+
+    void Crop(int32_t width, int32_t height);
 
 private:
     BMPFileHeader fileHeader_;
     BMPInfoHeader infoHeader_;
     std::vector<std::vector<Pixel>> data_;
+
+    static void ReadFileHeader(Image& image, std::ifstream& input);
+    static void ReadInfoHeader(Image& image, std::ifstream& input);
+    static void ReadData(Image& image, std::ifstream& input);
 };

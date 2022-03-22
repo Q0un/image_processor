@@ -3,6 +3,7 @@ add_library(lib STATIC)
 target_sources( lib
     PRIVATE
         impl/args_handler.cpp
+        impl/filters.cpp
         impl/image.cpp)
 
 target_include_directories( lib
