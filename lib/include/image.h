@@ -43,6 +43,8 @@ struct Pixel {
     Pixel& operator+=(const Pixel& other);
     Pixel operator*(float x) const;
     Pixel& operator*=(float x);
+
+    void Normalize();
 };
 
 class Image {

@@ -28,6 +28,12 @@ Pixel& Pixel::operator*=(float x) {
     return (*this) = operator*(x);
 }
 
+void Pixel::Normalize() {
+    r = std::min(1.f, std::max(0.f, r));
+    g = std::min(1.f, std::max(0.f, g));
+    b = std::min(1.f, std::max(0.f, b));
+}
+
 Image Image::FromFile(std::string_view fileName) {
     Image image;
     std::ifstream input(fileName.data(), std::ios_base::binary);

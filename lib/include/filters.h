@@ -14,7 +14,6 @@ public:
 class Crop : public Filter {
 public:
     Crop(size_t width, size_t height);
-
     Image operator()(const Image& image) const final;
 
 private:
@@ -39,7 +38,7 @@ public:
 
 class MatrixFilter : public Filter {
 public:
-    Image operator()(const Image& image) const final;
+    Image operator()(const Image& image) const override;
 
 protected:
     virtual const std::vector<std::vector<float>>& GetMatrix() const = 0;
@@ -58,12 +57,30 @@ private:
 };
 
 class EdgeDetection : public MatrixFilter {
+public:
+    EdgeDetection(float threshold);
+    Image operator()(const Image& image) const final;
+
 private:
     static inline std::vector<std::vector<float>> MATRIX{{0.,  -1., 0.},
                                                           {-1., 4.,  -1.},
                                                           {0.,  -1., 0.}};
 
     const std::vector<std::vector<float>>& GetMatrix() const final;
+
+    float threshold_;
+};
+
+class GaussBlur : public Filter {
+public:
+    GaussBlur(float sigma);
+    Image operator()(const Image& image) const final;
+
+private:
+    float sigma_;
+    static constexpr size_t RADIUS = 20;
+
+    float ApplyFormula(float x, size_t d) const;
 };
 
 } // namespace filters
