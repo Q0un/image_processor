@@ -143,7 +143,7 @@ Image GaussBlur::operator()(const Image& image) const {
 
 float GaussBlur::ApplyFormula(float x, size_t d) const {
     return x * std::exp(-(d * d / (2 * sigma_ * sigma_))) /
-           (2 * std::numbers::pi * sigma_ * sigma_);
+           std::sqrt(2 * std::numbers::pi * sigma_ * sigma_);
 }
 
 } // namespace filters
