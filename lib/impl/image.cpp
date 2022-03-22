@@ -63,12 +63,14 @@ Image Image::FromFile(std::string_view fileName) {
 
 void Image::SaveToFile(std::string_view fileName) const {
     std::ofstream output(fileName.data(), std::ios_base::binary);
-    output.write((const char*) &fileHeader_, sizeof(BMPFileHeader));
-    output.write((const char*) &infoHeader_, sizeof(BMPInfoHeader));
+    output.write(reinterpret_cast<const char*>(&fileHeader_),
+                 sizeof(BMPFileHeader));
+    output.write(reinterpret_cast<const char*>(&infoHeader_),
+                 sizeof(BMPInfoHeader));
     size_t rowPadding = (4 - infoHeader_.width * 3 % 4) % 4;
-    size_t i = infoHeader_.height - 1;
+    size_t i = Height() - 1;
     do {
-        for (size_t j = 0; j < infoHeader_.width; ++j) {
+        for (size_t j = 0; j < Width(); ++j) {
             output.put(static_cast<char>(data_[i][j].b * 255));
             output.put(static_cast<char>(data_[i][j].g * 255));
             output.put(static_cast<char>(data_[i][j].r * 255));
@@ -88,11 +90,11 @@ const std::vector<Pixel>& Image::operator[](size_t i) const {
     return data_[i];
 }
 
-int32_t Image::Width() const {
+size_t Image::Width() const {
     return infoHeader_.width;
 }
 
-int32_t Image::Height() const {
+size_t Image::Height() const {
     return infoHeader_.height;
 }
 
@@ -103,7 +105,7 @@ void Image::Crop(int32_t width, int32_t height) {
     infoHeader_.width = std::min(infoHeader_.width, width);
     infoHeader_.height = std::min(infoHeader_.height, height);
     data_.erase(data_.begin() + infoHeader_.height, data_.end());
-    for (size_t i = 0; i < infoHeader_.height; ++i) {
+    for (size_t i = 0; i < Height(); ++i) {
         data_[i].erase(data_[i].begin() + infoHeader_.width, data_[i].end());
     }
     rowPadding = (4 - infoHeader_.width * 3 % 4) % 4;
@@ -112,14 +114,16 @@ void Image::Crop(int32_t width, int32_t height) {
 }
 
 void Image::ReadFileHeader(Image& image, std::ifstream& input) {
-    input.read((char*) &image.fileHeader_, sizeof(BMPFileHeader));
+    input.read(reinterpret_cast<char*>(&image.fileHeader_),
+               sizeof(BMPFileHeader));
     if (!image.fileHeader_.Check()) {
         throw std::runtime_error("Wrong file format");
     }
 }
 
 void Image::ReadInfoHeader(Image& image, std::ifstream& input) {
-    input.read((char*) &image.infoHeader_, sizeof(BMPInfoHeader));
+    input.read(reinterpret_cast<char*>(&image.infoHeader_),
+               sizeof(BMPInfoHeader));
     if (!image.infoHeader_.Check()) {
         throw std::runtime_error("Wrong file format");
     }
@@ -130,15 +134,14 @@ void Image::ReadData(Image& image, std::ifstream& input) {
                        std::vector<Pixel>(image.infoHeader_.height));
     size_t rowPadding = (4 - image.infoHeader_.width * 3 % 4) % 4;
     for (size_t i = 0; i < std::abs(image.infoHeader_.height); ++i) {
-        for (size_t j = 0; j < image.infoHeader_.width; ++j) {
+        for (size_t j = 0; j < image.Width(); ++j) {
             uint8_t b = input.get();
             uint8_t g = input.get();
             uint8_t r = input.get();
             image.data_[i][j] = {b / 255.f, g / 255.f, r / 255.f};
         }
-        uint8_t x;
         for (size_t j = 0; j < rowPadding; ++j) {
-            input.read((char*) &x, sizeof(uint8_t));
+            input.get();
         }
     }
     image.fileHeader_.fileSize += (image.infoHeader_.width * 3 + rowPadding) *

@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <string>
 
-void ArgsHandler::Handle(int argc, char* argv[]) {
+void ArgsHandler::Handle(size_t argc, char* argv[]) {
     if (argc == 1) {
         WriteHelp();
         return;

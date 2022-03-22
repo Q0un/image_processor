@@ -51,8 +51,10 @@ Pixel MatrixFilter::ApplyMatrix(const Image& image, int32_t x,
     Pixel result;
     for (int8_t i = -1; i <= 1; ++i) {
         for (int8_t j = -1; j <= 1; ++j) {
-            int32_t curX = std::min(std::max(x + i, 0), image.Height() - 1);
-            int32_t curY = std::min(std::max(y + j, 0), image.Width() - 1);
+            size_t curX = std::min(static_cast<size_t>(std::max(x + i, 0)),
+                                   image.Height() - 1);
+            size_t curY = std::min(static_cast<size_t>(std::max(y + j, 0)),
+                                   image.Width() - 1);
             result += image[curX][curY] * GetMatrix()[i + 1][j + 1];
         }
     }

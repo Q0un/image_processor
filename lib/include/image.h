@@ -56,8 +56,8 @@ public:
     std::vector<Pixel>& operator[](size_t i);
     const std::vector<Pixel>& operator[](size_t i) const;
 
-    int32_t Width() const;
-    int32_t Height() const;
+    size_t Width() const;
+    size_t Height() const;
 
     void Crop(int32_t width, int32_t height);
 
