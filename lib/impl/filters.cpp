@@ -4,7 +4,8 @@
 
 namespace filters {
 
-Crop::Crop(size_t width, size_t height) : width_(width), height_(height) {}
+Crop::Crop(size_t width, size_t height) : width_(width), height_(height) {
+}
 
 Image Crop::operator()(const Image& image) const {
     Image result = image;
@@ -14,11 +15,12 @@ Image Crop::operator()(const Image& image) const {
 
 Image Grayscale::operator()(const Image& image) const {
     Image result = image;
-    for (size_t i = 0; i < image.Height(); ++i) {
-        for (size_t j = 0; j < image.Width(); ++j) {
-            result[i][j].r = result[i][j].g = result[i][j].b =
-                    image[i][j].r * COEF_R + image[i][j].g * COEF_G +
-                    image[i][j].b * COEF_B;
+    for (size_t x = 0; x < image.Height(); ++x) {
+        for (size_t y = 0; y < image.Width(); ++y) {
+            Pixel image_pixel = image.GetPixel(x, y);
+            auto value = image_pixel.r * COEF_R + image_pixel.g * COEF_G +
+                         image_pixel.b * COEF_B;
+            result.SetPixel(x, y, {value, value, value});
         }
     }
     return result;
@@ -26,11 +28,12 @@ Image Grayscale::operator()(const Image& image) const {
 
 Image Negative::operator()(const Image& image) const {
     Image result = image;
-    for (size_t i = 0; i < image.Height(); ++i) {
-        for (size_t j = 0; j < image.Width(); ++j) {
-            result[i][j].r = 1 - result[i][j].r;
-            result[i][j].g = 1 - result[i][j].g;
-            result[i][j].b = 1 - result[i][j].b;
+    for (size_t x = 0; x < image.Height(); ++x) {
+        for (size_t y = 0; y < image.Width(); ++y) {
+            Pixel image_pixel = image.GetPixel(x, y);
+            result.SetPixel(
+                x, y,
+                {1 - image_pixel.b, 1 - image_pixel.g, 1 - image_pixel.r});
         }
     }
     return result;
@@ -38,9 +41,9 @@ Image Negative::operator()(const Image& image) const {
 
 Image MatrixFilter::operator()(const Image& image) const {
     Image result = image;
-    for (size_t i = 0; i < image.Height(); ++i) {
-        for (size_t j = 0; j < image.Width(); ++j) {
-            result[i][j] = ApplyMatrix(image, i, j);
+    for (size_t x = 0; x < image.Height(); ++x) {
+        for (size_t y = 0; y < image.Width(); ++y) {
+            result.SetPixel(x, y, ApplyMatrix(image, x, y));
         }
     }
     return result;
@@ -49,16 +52,17 @@ Image MatrixFilter::operator()(const Image& image) const {
 Pixel MatrixFilter::ApplyMatrix(const Image& image, int32_t x,
                                 int32_t y) const {
     Pixel result;
-    for (int8_t i = -1; i <= 1; ++i) {
-        for (int8_t j = -1; j <= 1; ++j) {
-            size_t curX = std::min(static_cast<size_t>(std::max(x + i, 0)),
-                                   image.Height() - 1);
-            size_t curY = std::min(static_cast<size_t>(std::max(y + j, 0)),
-                                   image.Width() - 1);
-            result += image[curX][curY] * GetMatrix()[i + 1][j + 1];
+    const int8_t radius = GetMatrix().size() / 2;
+    for (int8_t i = -radius; i <= radius; ++i) {
+        for (int8_t j = -radius; j <= radius; ++j) {
+            const size_t cur_x = std::min(
+                static_cast<size_t>(std::max(x + i, 0)), image.Height() - 1);
+            const size_t cur_y = std::min(
+                static_cast<size_t>(std::max(y + j, 0)), image.Width() - 1);
+            result += image.GetPixel(cur_x, cur_y) * GetMatrix()[i + 1][j + 1];
         }
     }
-    result.Normalize();
+    result.Clamp();
     return result;
 }
 
@@ -66,18 +70,19 @@ const std::vector<std::vector<float>>& Sharpening::GetMatrix() const {
     return MATRIX;
 }
 
-EdgeDetection::EdgeDetection(float threshold) : threshold_(threshold) {}
+EdgeDetection::EdgeDetection(float threshold) : threshold_(threshold) {
+}
 
 Image EdgeDetection::operator()(const Image& image) const {
     const Grayscale grayscale;
     Image result = grayscale(image);
     result = MatrixFilter::operator()(result);
-    for (size_t i = 0; i < image.Height(); ++i) {
-        for (size_t j = 0; j < image.Width(); ++j) {
-            if (result[i][j].b > threshold_) {
-                result[i][j] = {1, 1, 1};
+    for (size_t x = 0; x < image.Height(); ++x) {
+        for (size_t y = 0; y < image.Width(); ++y) {
+            if (result.GetPixel(x, y).b > threshold_) {
+                result.SetPixel(x, y, Pixel::WHITE);
             } else {
-                result[i][j] = {0, 0, 0};
+                result.SetPixel(x, y, Pixel::BLACK);
             }
         }
     }
@@ -88,56 +93,49 @@ const std::vector<std::vector<float>>& EdgeDetection::GetMatrix() const {
     return MATRIX;
 }
 
-GaussBlur::GaussBlur(float sigma) : sigma_(sigma) {}
+GaussBlur::GaussBlur(float sigma) : sigma_(sigma) {
+}
 
 Image GaussBlur::operator()(const Image& image) const {
     Image result1 = image;
-    for (size_t i = 0; i < image.Height(); ++i) {
-        for (size_t j = 0; j < image.Width(); ++j) {
-            size_t left = i >= RADIUS ? i - RADIUS : 0;
-            size_t right =
-                    i + RADIUS <= image.Height() ? i + RADIUS : image.Height();
-            float sumR = 0;
-            float sumG = 0;
-            float sumB = 0;
-            for (size_t k = left; k <= i; ++k) {
-                sumR += ApplyFormula(image[k][j].r, i - k);
-                sumG += ApplyFormula(image[k][j].g, i - k);
-                sumB += ApplyFormula(image[k][j].b, i - k);
+    for (size_t x = 0; x < image.Height(); ++x) {
+        for (size_t y = 0; y < image.Width(); ++y) {
+            const size_t down = x >= RADIUS ? x - RADIUS : 0;
+            const size_t up = x + RADIUS + 1 <= image.Height() ? x + RADIUS + 1
+                                                               : image.Height();
+            float sum_r = 0;
+            float sum_g = 0;
+            float sum_b = 0;
+            for (size_t k = down; k < up; ++k) {
+                const auto image_pixel = image.GetPixel(k, y);
+                const size_t d = x >= k ? x - k : k - x;
+                sum_r += ApplyFormula(image_pixel.r, d);
+                sum_g += ApplyFormula(image_pixel.g, d);
+                sum_b += ApplyFormula(image_pixel.b, d);
             }
-            for (size_t k = i; k < right; ++k) {
-                sumR += ApplyFormula(image[k][j].r, k - i);
-                sumG += ApplyFormula(image[k][j].g, k - i);
-                sumB += ApplyFormula(image[k][j].b, k - i);
-            }
-            result1[i][j] = {sumB, sumG, sumR};
+            result1.SetPixel(x, y, {sum_b, sum_g, sum_r});
         }
     }
     Image result2 = image;
-    for (size_t i = 0; i < image.Height(); ++i) {
-        for (size_t j = 0; j < image.Width(); ++j) {
-            size_t left = j >= RADIUS ? j - RADIUS : 0;
-            size_t right =
-                    j + RADIUS <= image.Width() ? j + RADIUS : image.Width();
-            float sumR = 0;
-            float sumG = 0;
-            float sumB = 0;
-            for (size_t k = left; k <= j; ++k) {
-                sumR += ApplyFormula(result1[i][k].r, j - k);
-                sumG += ApplyFormula(result1[i][k].g, j - k);
-                sumB += ApplyFormula(result1[i][k].b, j - k);
+    for (size_t x = 0; x < image.Height(); ++x) {
+        for (size_t y = 0; y < image.Width(); ++y) {
+            const size_t left = y >= RADIUS ? y - RADIUS : 0;
+            const size_t right = y + RADIUS + 1 <= image.Width()
+                                     ? y + RADIUS + 1
+                                     : image.Width();
+            float sum_r = 0;
+            float sum_g = 0;
+            float sum_b = 0;
+            for (size_t k = left; k < right; ++k) {
+                const auto image_pixel = result1.GetPixel(x, k);
+                const size_t d = y >= k ? y - k : k - y;
+                sum_r += ApplyFormula(image_pixel.r, d);
+                sum_g += ApplyFormula(image_pixel.g, d);
+                sum_b += ApplyFormula(image_pixel.b, d);
             }
-            for (size_t k = j; k < right; ++k) {
-                sumR += ApplyFormula(result1[i][k].r, k - j);
-                sumG += ApplyFormula(result1[i][k].g, k - j);
-                sumB += ApplyFormula(result1[i][k].b, k - j);
-            }
-            result2[i][j] = {sumB, sumG, sumR};
-        }
-    }
-    for (size_t i = 0; i < image.Height(); ++i) {
-        for (size_t j = 0; j < image.Width(); ++j) {
-            result2[i][j].Normalize();
+            Pixel pixel = {sum_b, sum_g, sum_r};
+            pixel.Clamp();
+            result2.SetPixel(x, y, pixel);
         }
     }
     return result2;
@@ -150,20 +148,20 @@ float GaussBlur::ApplyFormula(float x, size_t d) const {
 
 Image RandomBlur::operator()(const Image& image) const {
     Image result = image;
-    for (size_t i = 0; i < image.Height(); ++i) {
-        for (size_t j = 0; j < image.Width(); ++j) {
-            size_t leftX = i >= RADIUS ? i - RADIUS : 0;
-            size_t rightX = i + RADIUS < image.Height() ?
-                            i + RADIUS : image.Height() - 1;
-            size_t leftY = j >= RADIUS ? j - RADIUS : 0;
-            size_t rightY = j + RADIUS < image.Width() ?
-                            j + RADIUS : image.Width() - 1;
-            size_t cx = leftX + rnd() % (rightX - leftX);
-            size_t cy = leftY + rnd() % (rightY - leftY);
-            result[i][j] = image[cx][cy];
+    for (size_t x = 0; x < image.Height(); ++x) {
+        for (size_t y = 0; y < image.Width(); ++y) {
+            size_t left_x = x >= RADIUS ? x - RADIUS : 0;
+            size_t right_x =
+                x + RADIUS < image.Height() ? x + RADIUS : image.Height() - 1;
+            size_t left_y = y >= RADIUS ? y - RADIUS : 0;
+            size_t right_y =
+                y + RADIUS < image.Width() ? y + RADIUS : image.Width() - 1;
+            size_t cx = left_x + rnd() % (right_x - left_x);
+            size_t cy = left_y + rnd() % (right_y - left_y);
+            result.SetPixel(x, y, image.GetPixel(cx, cy));
         }
     }
     return result;
 }
 
-} // namespace filters
+}  // namespace filters

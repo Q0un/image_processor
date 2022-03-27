@@ -50,9 +50,8 @@ private:
 
 class Sharpening : public MatrixFilter {
 private:
-    static inline std::vector<std::vector<float>> MATRIX{{0.,  -1., 0.},
-                                                          {-1., 5.,  -1.},
-                                                          {0.,  -1., 0.}};
+    static const inline std::vector<std::vector<float>> MATRIX{
+        {0., -1., 0.}, {-1., 5., -1.}, {0., -1., 0.}};
 
     const std::vector<std::vector<float>>& GetMatrix() const final;
 };
@@ -63,9 +62,8 @@ public:
     Image operator()(const Image& image) const final;
 
 private:
-    static inline std::vector<std::vector<float>> MATRIX{{0.,  -1., 0.},
-                                                          {-1., 4.,  -1.},
-                                                          {0.,  -1., 0.}};
+    static const inline std::vector<std::vector<float>> MATRIX{
+        {0., -1., 0.}, {-1., 4., -1.}, {0., -1., 0.}};
 
     const std::vector<std::vector<float>>& GetMatrix() const final;
 
@@ -93,4 +91,4 @@ private:
     static constexpr size_t RADIUS = 15;
 };
 
-} // namespace filters
+}  // namespace filters

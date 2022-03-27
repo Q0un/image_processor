@@ -7,11 +7,11 @@
 #pragma pack(push, 1)
 
 struct BMPFileHeader {
-    uint16_t fileType;
-    uint32_t fileSize;
+    uint16_t file_type;
+    uint32_t file_size;
     uint16_t reserved1;
     uint16_t reserved2;
-    uint32_t offsetData;
+    uint32_t offset_data;
 
     bool Check() const;
 };
@@ -21,13 +21,13 @@ struct BMPInfoHeader {
     int32_t width;
     int32_t height;
     uint16_t planes;
-    uint16_t bitCount;
+    uint16_t bit_count;
     uint32_t compression;
-    uint32_t sizeImage;
-    int32_t xPixelsPerMeter;
-    int32_t yPixelsPerMeter;
-    uint32_t colorsUsed;
-    uint32_t colorsImportant;
+    uint32_t size_image;
+    int32_t x_pixels_per_meter;
+    int32_t y_pixels_per_meter;
+    uint32_t colors_used;
+    uint32_t colors_important;
 
     bool Check() const;
 };
@@ -44,29 +44,31 @@ struct Pixel {
     Pixel operator*(float x) const;
     Pixel& operator*=(float x);
 
-    void Normalize();
+    void Clamp();
+
+    static const Pixel BLACK;
+    static const Pixel WHITE;
 };
 
 class Image {
 public:
-    static Image FromFile(std::string_view fileName);
+    using DataType = std::vector<std::vector<Pixel>>;
 
-    void SaveToFile(std::string_view fileName) const;
+    static Image FromFile(std::string_view file_name);
 
-    std::vector<Pixel>& operator[](size_t i);
-    const std::vector<Pixel>& operator[](size_t i) const;
+    void SaveToFile(std::string_view file_name) const;
 
     size_t Width() const;
     size_t Height() const;
 
+    const Pixel& GetPixel(size_t x, size_t y) const;
+    Pixel& SetPixel(size_t x, size_t y, const Pixel& pixel);
+
     void Crop(int32_t width, int32_t height);
 
 private:
-    BMPFileHeader fileHeader_;
-    BMPInfoHeader infoHeader_;
-    std::vector<std::vector<Pixel>> data_;
-
-    static void ReadFileHeader(Image& image, std::ifstream& input);
-    static void ReadInfoHeader(Image& image, std::ifstream& input);
-    static void ReadData(Image& image, std::ifstream& input);
+    BMPFileHeader file_header_;
+    BMPInfoHeader info_header_;
+    DataType data_;
+    bool reversed;
 };
