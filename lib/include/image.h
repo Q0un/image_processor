@@ -54,21 +54,23 @@ class Image {
 public:
     using DataType = std::vector<std::vector<Pixel>>;
 
-    static Image FromFile(std::string_view file_name);
-
-    void SaveToFile(std::string_view file_name) const;
+    Image(const BMPFileHeader& file_header, const BMPInfoHeader& info_header,
+          DataType data);
 
     size_t Width() const;
     size_t Height() const;
+    size_t Padding() const;
 
     const Pixel& GetPixel(size_t x, size_t y) const;
     Pixel& SetPixel(size_t x, size_t y, const Pixel& pixel);
 
     void Crop(int32_t width, int32_t height);
 
+    const BMPFileHeader& GetFileHeader() const;
+    const BMPInfoHeader& GetInfoHeader() const;
+
 private:
     BMPFileHeader file_header_;
     BMPInfoHeader info_header_;
     DataType data_;
-    bool reversed;
 };

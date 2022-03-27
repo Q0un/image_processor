@@ -1,14 +1,26 @@
 #include "args_handler.h"
 
-#include "filters.h"
+#include "bmp_reader.h"
+#include "bmp_writer.h"
+#include "crop.h"
+#include "crystallize.h"
+#include "edge_detection.h"
+#include "gauss_blur.h"
+#include "grayscale.h"
 #include "image.h"
+#include "negative.h"
+#include "sharpening.h"
 
-#include <cstring>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
 void ArgsHandler::Handle(size_t argc, char* argv[]) {
+    std::vector<std::string> args;
+    for (size_t i = 0; i < argc; ++i) {
+        args.emplace_back(argv[i]);
+    }
     if (argc == 1) {
         WriteHelp();
         return;
@@ -18,64 +30,51 @@ void ArgsHandler::Handle(size_t argc, char* argv[]) {
     }
     std::string input_file = argv[1];
     std::string output_file = argv[2];
-    Image image = Image::FromFile(input_file);
+    auto image = BMPReader::Read(input_file);
+    std::unique_ptr<const filters::Filter> filter;
     for (size_t i = 3; i < argc; ++i) {
-        if (std::strcmp(argv[i], "-crop") == 0) {
+        if (args[i] == "-crop") {
             if (i + 1 == argc) {
                 throw std::runtime_error("Missing operand");
             }
-            const int32_t width = std::strtol(argv[++i], nullptr, 10);
+            const int32_t width = std::stoi(args[++i]);
             if (width <= 0) {
                 throw std::runtime_error("Crop get wrong width");
             }
             if (i + 1 == argc) {
                 throw std::runtime_error("Missing operand");
             }
-            const int32_t height = std::strtol(argv[++i], nullptr, 10);
+            const int32_t height = std::stoi(args[++i]);
             if (height <= 0) {
                 throw std::runtime_error("Crop get wrong height");
             }
-            const filters::Crop crop(width, height);
-            image = crop(image);
-        } else if (std::strcmp(argv[i], "-gs") == 0) {
-            const filters::Grayscale grayscale;
-            image = grayscale(image);
-        } else if (std::strcmp(argv[i], "-neg") == 0) {
-            const filters::Negative negative;
-            image = negative(image);
-        } else if (std::strcmp(argv[i], "-sharp") == 0) {
-            const filters::Sharpening sharp;
-            image = sharp(image);
-        } else if (std::strcmp(argv[i], "-edge") == 0) {
-            errno = 0;
+            filter = std::make_unique<const filters::Crop>(width, height);
+        } else if (args[i] == "-gs") {
+            filter = std::make_unique<const filters::Grayscale>();
+        } else if (args[i] == "-neg") {
+            filter = std::make_unique<const filters::Negative>();
+        } else if (args[i] == "-sharp") {
+            filter = std::make_unique<const filters::Sharpening>();
+        } else if (args[i] == "-edge") {
             if (i + 1 == argc) {
                 throw std::runtime_error("Missing operand");
             }
-            const float threshold = std::strtof(argv[++i], nullptr);
-            if (errno) {
-                throw std::runtime_error("Edge detection get wrong threshold");
-            }
-            const filters::EdgeDetection edge(threshold);
-            image = edge(image);
-        } else if (std::strcmp(argv[i], "-blur") == 0) {
-            errno = 0;
+            const float threshold = std::stof(args[++i]);
+            filter = std::make_unique<const filters::EdgeDetection>(threshold);
+        } else if (args[i] == "-blur") {
             if (i + 1 == argc) {
                 throw std::runtime_error("Missing operand");
             }
-            const float sigma = std::strtof(argv[++i], nullptr);
-            if (errno) {
-                throw std::runtime_error("Blur get wrong sigma");
-            }
-            const filters::GaussBlur blur(sigma);
-            image = blur(image);
-        } else if (std::strcmp(argv[i], "-rand") == 0) {
-            const filters::RandomBlur blur;
-            image = blur(image);
+            const float sigma = std::stof(args[++i]);
+            filter = std::make_unique<const filters::GaussBlur>(sigma);
+        } else if (args[i] == "-crystal") {
+            filter = std::make_unique<const filters::Crystallize>();
         } else {
             throw std::runtime_error("Wrong filter operand");
         }
     }
-    image.SaveToFile(output_file);
+    image = (*filter)(image);
+    BMPWriter::Write(output_file, image);
 }
 
 void ArgsHandler::WriteHelp() {

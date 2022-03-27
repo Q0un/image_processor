@@ -11,3 +11,7 @@ add_test(test_image_io test_image_io)
 add_executable(test_args_handler test_args_handler.cpp)
 target_link_libraries(test_args_handler PRIVATE lib catch)
 add_test(test_args_handler test_args_handler)
+
+add_executable(test_filters test_filters.cpp)
+target_link_libraries(test_filters PRIVATE lib catch)
+add_test(test_filters test_filters)
