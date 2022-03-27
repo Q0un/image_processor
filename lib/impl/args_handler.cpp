@@ -73,7 +73,9 @@ void ArgsHandler::Handle(size_t argc, char* argv[]) {
             throw std::runtime_error("Wrong filter operand");
         }
     }
-    image = (*filter)(image);
+    if (filter) {
+        image = (*filter)(image);
+    }
     BMPWriter::Write(output_file, image);
 }
 
